@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Exceptions\UnsupportedOperationException;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use Paganini\Exceptions\UnsupportedOperationException;
 
 class ContainerLabelService
 {

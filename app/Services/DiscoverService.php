@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Exceptions\UnsupportedOperationException;
 use Illuminate\Support\Facades\Redis;
+use Paganini\Exceptions\UnsupportedOperationException;
 
 class DiscoverService
 {

@@ -2,11 +2,11 @@
 
 namespace Tests\Unit\Services;
 
-use App\Exceptions\UnsupportedOperationException;
 use App\Services\ContainerLabelService;
 use App\Services\DiscoverService;
 use Illuminate\Support\Facades\Redis;
 use Mockery;
+use Paganini\Exceptions\UnsupportedOperationException;
 use ReflectionClass;
 use Tests\TestCase;
 

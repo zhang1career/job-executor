@@ -2,8 +2,9 @@
 
 namespace App\Utils;
 
-use App\Exceptions\IllegalArgumentException;
 use Illuminate\Database\Eloquent\Collection;
+use Paganini\Exceptions\IllegalArgumentException;
+use Paganini\Utils\StringUtil;
 
 class CollectionUtil
 {
@@ -15,7 +16,8 @@ class CollectionUtil
      * @return array
      * @throws IllegalArgumentException
      */
-    public static function columnOf(Collection $array, string $fieldName) : array {
+    public static function columnOf(Collection $array, string $fieldName): array
+    {
         if (StringUtil::isBlank($fieldName)) {
             throw new IllegalArgumentException('field should not be blank');
         }
@@ -39,14 +41,15 @@ class CollectionUtil
      * @return array
      * @throws IllegalArgumentException
      */
-    public static function indexBy(Collection $array, string $fieldName) : array {
+    public static function indexBy(Collection $array, string $fieldName): array
+    {
         if (StringUtil::isBlank($fieldName)) {
             throw new IllegalArgumentException('field should not be blank');
         }
 
         $ret = [];
         foreach ($array as $_item) {
-            $_fieldValue       = $_item->$fieldName;
+            $_fieldValue = $_item->$fieldName;
             $ret[$_fieldValue] = $_item;
         }
 

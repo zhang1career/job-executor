@@ -5,11 +5,18 @@
     "description": "The skeleton application for the Laravel framework.",
     "keywords": ["laravel", "framework"],
     "license": "MIT",
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/zhang1career/paganini.git"
+        }
+    ],
     "require": {
         "php": "^8.2",
         "laravel/framework": "^11.31",
         "laravel/tinker": "^2.9",
-        "ext-curl": "*"
+        "ext-curl": "*",
+        "zhang1career/paganini": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

@@ -3,7 +3,8 @@
 namespace App\Utils;
 
 use App\Constants\SystemConstant;
-use App\Exceptions\UnsupportedOperationException;
+use Paganini\Exceptions\UnsupportedOperationException;
+use Paganini\Utils\UuidUtil;
 
 class SystemUtil
 {
@@ -14,7 +15,8 @@ class SystemUtil
      * @return string
      * @throws UnsupportedOperationException
      */
-    public static function getUuid() : string {
+    public static function getUuid(): string
+    {
         $os = config('system.os');
         if ($os == SystemConstant::OS_EC2) {
             $uuid = exec('sudo dmidecode --string system-uuid');

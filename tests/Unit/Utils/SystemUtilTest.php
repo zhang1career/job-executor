@@ -3,9 +3,9 @@
 namespace Tests\Unit\Utils;
 
 use App\Constants\SystemConstant;
-use App\Exceptions\UnsupportedOperationException;
 use App\Utils\SystemUtil;
 use Illuminate\Support\Facades\Config;
+use Paganini\Exceptions\UnsupportedOperationException;
 use Tests\TestCase;
 
 class SystemUtilTest extends TestCase

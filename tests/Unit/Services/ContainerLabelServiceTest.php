@@ -2,10 +2,10 @@
 
 namespace Tests\Unit\Services;
 
-use App\Exceptions\UnsupportedOperationException;
 use App\Services\ContainerLabelService;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use Paganini\Exceptions\UnsupportedOperationException;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use ReflectionClass;

@@ -2,9 +2,9 @@
 
 namespace Tests\Unit\Utils;
 
-use App\Exceptions\IllegalArgumentException;
 use App\Utils\CollectionUtil;
 use Illuminate\Database\Eloquent\Collection;
+use Paganini\Exceptions\IllegalArgumentException;
 use Tests\TestCase;
 
 class CollectionUtilTest extends TestCase
