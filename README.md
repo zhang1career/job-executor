@@ -32,3 +32,7 @@ For example, a service discovering task that uses the PHP executor created above
     > 执行器：PHP执行器
     > JobHandler：serviceDiscover
 ```
+
+## Acknowledgments
+
+Thanks to [yupeng2015](https://github.com/yupeng2015). The XXL-JOB implementation in this project mainly references their code repository: [xxljob-exe-laravel](https://github.com/yupeng2015/xxljob-exe-laravel).
