@@ -9,24 +9,24 @@ class ApiResponse
      * @param $data
      * @return array
      */
-    public static function ok($data = null) : array {
+    public static function ok($data = null, $msg = '') : array {
         return [
             'data' => $data ?? '',
-            'err'  => 0,
-            'msg'  => ''
+            'code'  => 0,
+            'msg'  => $msg
         ];
     }
 
     /**
-     * @param $errorCode
-     * @param $errorMessage
+     * @param $code
+     * @param $msg
      * @return array
      */
-    public static function error($errorCode, $errorMessage) : array {
+    public static function error($code, $msg) : array {
         return [
             'data' => '',
-            'err'  => $errorCode,
-            'msg'  => $errorMessage
+            'code'  => $code,
+            'msg'  => $msg
         ];
     }
 }

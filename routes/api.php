@@ -1,7 +1,12 @@
 <?php
 
+use App\Http\Controllers\XxlJobController;
+use App\Http\Middleware\XxljobAuthentication;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ServiceDiscoveryController;
 
-Route::post('/service-discovery', [ServiceDiscoveryController::class, 'discover']);
 
+Route::prefix("xxl-job")->middleware([XxljobAuthentication::class])->group(function () {
+    Route::get('beat', [XxlJobController::class, 'beat']);
+    Route::post('run', [XxlJobController::class, 'run']);
+    Route::post('kill', [XxlJobController::class, 'kill']);
+});

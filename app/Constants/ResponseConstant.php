@@ -13,7 +13,6 @@ class ResponseConstant
     public const RET_ERR_HTTP                   = 2000;
 
     public const RET_ERR_PARAM                  = 3000;
-    public const RET_ERR_PARAM_INVALID          = 3001;
 
     public const RET_ERR_COMMAND                = 6000;
 

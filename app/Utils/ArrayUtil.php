@@ -3,7 +3,6 @@
 namespace App\Utils;
 
 use App\Exceptions\IllegalArgumentException;
-use App\Exceptions\InvalidException;
 
 class ArrayUtil
 {
@@ -16,10 +15,11 @@ class ArrayUtil
      * @param array $array2
      * @return array
      */
-    public static function extersect(array $array1, array $array2) : array {
+    public static function extersect(array $array1, array $array2): array
+    {
         $intersect = array_intersect($array1, $array2);
-        $diff1     = array_diff($array1, $intersect);
-        $diff2     = array_diff($array2, $intersect);
+        $diff1 = array_diff($array1, $intersect);
+        $diff2 = array_diff($array2, $intersect);
         return [$diff1, $diff2];
     }
 
@@ -52,7 +52,8 @@ class ArrayUtil
      * @param array $array2
      * @return array
      */
-    public static function combineAndSort(array $array1, array $array2) : array {
+    public static function combineAndSort(array $array1, array $array2): array
+    {
         // Initialize the new combined array
         $combinedArray = [];
 
@@ -84,7 +85,8 @@ class ArrayUtil
      * @param array $array
      * @return array
      */
-    public static function uniqAndSort(array $array) : array {
+    public static function uniqAndSort(array $array): array
+    {
         $array = array_unique($array);
         sort($array);
         return $array;
@@ -98,7 +100,8 @@ class ArrayUtil
      * @param int $length
      * @return array
      */
-    public static function partition(array $newsList, int $length) : array {
+    public static function partition(array $newsList, int $length): array
+    {
         return array_chunk($newsList, $length);
     }
 
@@ -112,7 +115,8 @@ class ArrayUtil
      * @param callable $reducer
      * @return array
      */
-    public static function cartesianCombine(array $array1, array $array2, callable $reducer) : array {
+    public static function cartesianCombine(array $array1, array $array2, callable $reducer): array
+    {
         if (!$array1 || !$array2) {
             return [];
         }
@@ -135,7 +139,8 @@ class ArrayUtil
      * @return array
      * @throws IllegalArgumentException
      */
-    public static function columnOf(array $array, string $fieldName) : array {
+    public static function columnOf(array $array, string $fieldName): array
+    {
         if (StringUtil::isBlank($fieldName)) {
             throw new IllegalArgumentException('field should not be blank');
         }
@@ -163,7 +168,8 @@ class ArrayUtil
      * @return array
      * @throws IllegalArgumentException
      */
-    public static function indexBy(array $array, string $fieldName) : array {
+    public static function indexBy(array $array, string $fieldName): array
+    {
         if (StringUtil::isBlank($fieldName)) {
             throw new IllegalArgumentException('field should not be blank');
         }
@@ -174,12 +180,12 @@ class ArrayUtil
         $ret = [];
         foreach ($array as $_item) {
             if (is_array($_item) && isset($_item[$fieldName])) {
-                $_fieldValue       = $_item[$fieldName];
+                $_fieldValue = $_item[$fieldName];
                 $ret[$_fieldValue] = $_item;
                 continue;
             }
             if (is_object($_item) && isset($_item->$fieldName)) {
-                $_fieldValue       = $_item->$fieldName;
+                $_fieldValue = $_item->$fieldName;
                 $ret[$_fieldValue] = $_item;
                 continue;
             }
@@ -199,7 +205,8 @@ class ArrayUtil
      * @return array
      * @throws IllegalArgumentException
      */
-    public static function groupBy(array $array, string $fieldName) : array {
+    public static function groupBy(array $array, string $fieldName): array
+    {
         if (StringUtil::isBlank($fieldName)) {
             throw new IllegalArgumentException('field should not be blank');
         }
@@ -240,7 +247,8 @@ class ArrayUtil
      * @param array $keys
      * @return array
      */
-    public static function includeByKey(array $array, array $keys) : array {
+    public static function includeByKey(array $array, array $keys): array
+    {
         if (!$array || !$keys) {
             return [];
         }
@@ -258,7 +266,8 @@ class ArrayUtil
      * @param array $keys
      * @return array
      */
-    public static function excludeByKey(array $array, array $keys) : array {
+    public static function excludeByKey(array $array, array $keys): array
+    {
         if (!$array) {
             return [];
         }
@@ -278,17 +287,18 @@ class ArrayUtil
      * @param array $data
      * @param string $pathStr
      * @return array|mixed
-     * @throws InvalidException
+     * @throws IllegalArgumentException
      */
-    public static function deepGet(array $data, string $pathStr) : mixed {
+    public static function deepGet(array $data, string $pathStr): mixed
+    {
         $paths = explode('.', $pathStr);
-        $ret   = $data;
+        $ret = $data;
         foreach ($paths as $_path) {
             if (!$ret) {
-                throw new InvalidException('data is null, path=' . $_path);
+                throw new IllegalArgumentException('data is null, path=' . $_path);
             }
             if (!isset($ret[$_path])) {
-                throw new InvalidException('path not found, path=' . $_path);
+                throw new IllegalArgumentException('path not found, path=' . $_path);
             }
             $ret = $ret[$_path];
         }
@@ -307,7 +317,8 @@ class ArrayUtil
      * @param $value
      * @return void
      */
-    public static function conflictSafeInsert(&$array, $key, $value) {
+    public static function conflictSafeInsert(&$array, $key, $value)
+    {
         if (!array_key_exists($key, $array)) {
             $array[$key] = $value;
             return;
