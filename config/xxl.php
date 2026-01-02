@@ -3,9 +3,9 @@
 use App\Jobs\ServiceManagement;
 
 return [
-    "admin_address" => 'http://xxl-job:8080/xxl-job-admin/',
-    "local_ip" => "http://nginx:8199/api/xxl-job",
-    "token" => "default_token",
+    "admin_address" => env('XXL_JOB_ADMIN_ADDRESS'),
+    "local_ip" => env('XXL_JOB_LOCAL_IP', 'http://locolhost'),
+    "token" => env('XXL_JOB_TOKEN', 'default_token'),
     'jobs' => [
         "serviceDiscover" => [ServiceManagement::class, "discover"]
     ]

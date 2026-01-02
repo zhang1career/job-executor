@@ -13,7 +13,7 @@ class XxljobAuthentication
     {
         $token = $request->header('XXL-JOB-ACCESS-TOKEN');
         if (config('xxl.token') != $token) {
-            Log::channel('xxljob')->info('token验证失败！' . $token);
+            Log::error('token验证失败！' . $token);
             return XxlResponse::fail('token验证失败！');
         }
         return $next($request);
