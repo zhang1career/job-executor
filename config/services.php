@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'api_gateway' => [
+        'base_url' => env('API_GATEWAY_BASE_URL', 'https://localhost'),
+        'account' => [
+            'rule-broker' => [
+                'username' => env('API_GATEWAY_ACCOUNT_RULE_BROKER_USER', ''),
+                'password' => env('API_GATEWAY_ACCOUNT_RULE_BROKER_PASS', ''),
+            ]
+        ]
+    ]
 ];

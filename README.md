@@ -1,38 +1,71 @@
+# Quick Start
+
+This is a PHP job executor for XXL-JOB.
+
+It supports:
+* service discovery
+* API gateway SSO
 
 
-# XXL-JOB Configuration
+## XXL-JOB Configuration
 
-## Create a job executor
+### 1. Create a job executor
 
-### Option 1: from xxl-job-admin UI
+#### Option 1 — via the xxl-job-admin UI
 
-```
-执行器管理
-  > 新增
-    > AppName：xxl-job-executor-php
-    > 名称：PHP执行器
-    > 注册方式：手动录入
-    > 机器地址：http://nginx:8199/api/xxl-job
-```
+In the Admin UI:
+- Go to Executor Management → Add
+- AppName: `xxl-job-executor-php`
+- Name: `PHP Executor`
+- Registration: `Manual`
+- Address: `http://nginx:8199/api/xxl-job`
 
-### Option 2: from job-executor command line
+#### Option 2 — from the job-executor command line
+
+Run:
 
 ```shell
 php artisan cmd:xxljob register
 ```
 
+### 2. Create a task
 
-## Create a task
+Example: create a service-discovery task that uses the PHP executor.
 
-For example, a service discovering task that uses the PHP executor created above.
+In the Admin UI:
+- Go to Task Management → Add
+- Executor: `PHP Executor`
+- JobHandler: `discoverService`
 
+
+# Features
+
+## Service Discovery
+
+To enable service discovery, add a label to each service in your `docker-compose.yml`.
+Use the `appmap=` prefix followed by `SERVICE_NAME:MACHINE_PORT`.
+Replace `SERVICE_NAME` and `MACHINE_PORT` with your service's name and port.
+
+Example:
+
+```yaml
+labels:
+  - "appmap=${SERVICE_NAME}:${MACHINE_PORT}"
 ```
-任务管理
-  > 新增
-    > 执行器：PHP执行器
-    > JobHandler：serviceDiscover
-```
 
-## Acknowledgments
+When the `discoverService` job runs, it scans the services defined in `docker-compose.yml`,
+reads the `appmap` labels to extract service names and ports, and registers them in Redis.
 
-Thanks to [yupeng2015](https://github.com/yupeng2015). The XXL-JOB implementation in this project mainly references their code repository: [xxljob-exe-laravel](https://github.com/yupeng2015/xxljob-exe-laravel).
+
+## API Gateway SSO
+
+The API gateway SSO keeps tokens refreshed so services can call APIs without interruption.
+
+Enable the `login*` (e.g. `loginRuleBroker`) jobs in the xxl-job-admin UI to start the SSO login process.
+
+Enalbe the `refresh*` (e.g. `refreshRuleBroker`) jobs to keep the tokens refreshed.
+
+# Acknowledgments
+
+Thanks to [yupeng2015](https://github.com/yupeng2015). This project's XXL-JOB implementation is
+based on and inspired by the `xxljob-exe-laravel` repository: https://github.com/yupeng2015/xxljob-exe-laravel

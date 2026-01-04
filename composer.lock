@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9f523b2eb594b2676693839485597ae5",
+    "content-hash": "2d209c0f6fe53365793af234dcd86c6b",
     "packages": [
         {
             "name": "brick/math",
@@ -5919,16 +5919,16 @@
         },
         {
             "name": "zhang1career/paganini",
-            "version": "0.1.0",
+            "version": "v0.1.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/zhang1career/paganini.git",
-                "reference": "35e2b135a55a2a22ac99dc3e18f91890997bec8d"
+                "reference": "009c5009616b784048ecb2756e6faef793de102d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/zhang1career/paganini/zipball/35e2b135a55a2a22ac99dc3e18f91890997bec8d",
-                "reference": "35e2b135a55a2a22ac99dc3e18f91890997bec8d",
+                "url": "https://api.github.com/repos/zhang1career/paganini/zipball/009c5009616b784048ecb2756e6faef793de102d",
+                "reference": "009c5009616b784048ecb2756e6faef793de102d",
                 "shasum": ""
             },
             "require": {
@@ -5964,10 +5964,10 @@
                 "utils"
             ],
             "support": {
-                "source": "https://github.com/zhang1career/paganini/tree/v0.1.0",
+                "source": "https://github.com/zhang1career/paganini/tree/v0.1.1.1",
                 "issues": "https://github.com/zhang1career/paganini/issues"
             },
-            "time": "2026-01-02T10:41:13+00:00"
+            "time": "2026-01-04T09:41:46+00:00"
         }
     ],
     "packages-dev": [
