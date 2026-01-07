@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Components\XxlResponse;
+use App\Queues\XxlJobExecutor;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Storage;
@@ -73,14 +74,11 @@ class XxlJobController
             return XxlResponse::fail('executor handler invalid! handler=' . $executorHandler);
         }
 
-        $ok = call_user_func($objCall, $executorParams);
-        if (!$ok) {
-            $storage->delete($jobFilePath);
-            return XxlResponse::jobCallback($logId, 500, 'failed!');
-        }
+        // dispatch job
+        XxlJobExecutor::dispatch($objCall, $executorParams, $logId, $jobFilePath);
 
-        $storage->delete($jobFilePath);
-        return XxlResponse::jobCallback($logId, 200, 'success');
+//        return XxlResponse::jobCallback($logId, 200, json_encode($data));
+        return XxlResponse::success();
     }
 
     /**

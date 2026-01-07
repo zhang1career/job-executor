@@ -98,7 +98,7 @@ class XxlJobManage extends Command implements PromptsForMissingInput
      */
     private function register(mixed $token): ResponseInterface
     {
-        $uri = $this->xxljobAdminUrl . 'api/registry';
+        $uri = $this->xxljobAdminUrl . '/api/registry';
 
         return $this->httpClient->post($uri, [
             'headers' => [

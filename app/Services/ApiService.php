@@ -64,6 +64,7 @@ class ApiService
 
             return [
                 'redis_keys_written' => $writtenKeys,
+                'scope' => $tokens['scope'] ?? null,
             ];
         } catch (GuzzleException $e) {
             ExceptionUtil::logTrace('[account] login failed', $e);
