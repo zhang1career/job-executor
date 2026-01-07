@@ -1,0 +1,190 @@
+version: '3.8'
+
+services:
+  # Web 应用容器 - 处理 HTTP 请求
+  app:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    container_name: job-executor-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./storage:/var/www/html/storage
+    networks:
+      - app-network
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+      - APP_DEBUG=${APP_DEBUG:-false}
+    depends_on:
+      - db
+      - redis
+    # 只运行 PHP-FPM，不运行队列工作进程
+    command: php-fpm
+
+  # Nginx Web 服务器
+  nginx:
+    image: nginx:alpine
+    container_name: job-executor-nginx
+    restart: unless-stopped
+    ports:
+      - "8199:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - app-network
+    depends_on:
+      - app
+
+  # 队列工作进程容器 - 方案一：单个工作进程
+  queue-worker:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    container_name: job-executor-queue-worker
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./storage:/var/www/html/storage
+    networks:
+      - app-network
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+      - APP_DEBUG=${APP_DEBUG:-false}
+    depends_on:
+      - db
+      - redis
+    # 运行队列工作进程
+    command: >
+      sh -c "
+        php artisan config:cache &&
+        php artisan queue:work
+          --queue=default
+          --tries=3
+          --timeout=60
+          --max-time=3600
+          --sleep=3
+          --max-jobs=1000
+          --verbose
+      "
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  # 队列工作进程容器 - 方案二：多个工作进程（可选）
+  # 如果需要更多并发处理能力，可以启动多个实例
+  queue-worker-1:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    container_name: job-executor-queue-worker-1
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./storage:/var/www/html/storage
+    networks:
+      - app-network
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+      - APP_DEBUG=${APP_DEBUG:-false}
+    depends_on:
+      - db
+      - redis
+    command: >
+      sh -c "
+        php artisan config:cache &&
+        php artisan queue:work
+          --queue=default
+          --tries=3
+          --timeout=60
+          --max-time=3600
+          --sleep=3
+          --max-jobs=1000
+      "
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  queue-worker-2:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    container_name: job-executor-queue-worker-2
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./storage:/var/www/html/storage
+    networks:
+      - app-network
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+      - APP_DEBUG=${APP_DEBUG:-false}
+    depends_on:
+      - db
+      - redis
+    command: >
+      sh -c "
+        php artisan config:cache &&
+        php artisan queue:work
+          --queue=default
+          --tries=3
+          --timeout=60
+          --max-time=3600
+          --sleep=3
+          --max-jobs=1000
+      "
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  # 数据库
+  db:
+    image: mysql:8.0
+    container_name: job-executor-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-laravel}
+      MYSQL_USER: ${DB_USERNAME:-laravel}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-password}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - app-network
+    ports:
+      - "3306:3306"
+
+  # Redis（用于缓存和队列）
+  redis:
+    image: redis:7-alpine
+    container_name: job-executor-redis
+    restart: unless-stopped
+    networks:
+      - app-network
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db-data:
+  redis-data:
+
