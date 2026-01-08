@@ -12,39 +12,39 @@ use Psr\Http\Message\ResponseInterface;
 class XxlJobManage extends Command implements PromptsForMissingInput
 {
     /**
-     * 命令名称及签名.
+     * Command name and signature.
      *
      * @var string
      */
     protected $signature = 'cmd:xxljob
                             {action : The action to perform, e.g. register.}';
     /**
-     * 命令描述.
+     * Command description.
      *
      * @var string
      */
     protected $description = 'XXL-Job management command';
 
     /**
-     * http客户端
+     * HTTP client
      * @var Client
      */
     protected Client $httpClient;
 
     /**
-     * xxljob-admin 地址
+     * xxljob-admin address
      * @var string
      */
     protected string $xxljobAdminUrl;
 
     /**
-     * 本机IP
+     * Local IP address
      * @var string
      */
     protected string $localIp;
 
     /**
-     * 创建命令.
+     * Create command instance.
      *
      * @return void
      */
@@ -57,7 +57,7 @@ class XxlJobManage extends Command implements PromptsForMissingInput
     }
 
     /**
-     * 提示缺失的输入参数.
+     * Prompt for missing input arguments.
      *
      * @return array<string, string>
      */
@@ -68,7 +68,7 @@ class XxlJobManage extends Command implements PromptsForMissingInput
     }
 
     /**
-     * 执行命令.
+     * Execute the command.
      *
      * @throws GuzzleException
      */

@@ -7,13 +7,13 @@ use Attribute;
 /**
  * XxlJob Attribute
  *
- * 用于标记 XXL-JOB 业务方法
+ * Used to mark XXL-JOB business methods
  *
  * @example
  * #[XxlJob('discoverService')]
  * public static function discover(): array
  * {
- *     // 业务逻辑
+ *     // Business logic
  *     return [true, $result, null];
  * }
  */
@@ -21,7 +21,7 @@ use Attribute;
 readonly class XxlJob
 {
     /**
-     * @param string $handler 任务标识，对应 XXL-JOB 中的 executorHandler
+     * @param string $handler Job identifier, corresponds to executorHandler in XXL-JOB
      */
     public function __construct(
         public string $handler

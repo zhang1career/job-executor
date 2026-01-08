@@ -6,15 +6,15 @@ return [
     'token' => '03cdd84a834e4542ae65227294e5278f',
 
     /**
-     * Jobs 配置
+     * Jobs configuration
      *
-     * 推荐方式：使用 XxlJob Attribute 标记业务方法，系统会自动扫描并注册
-     * 示例：
+     * Recommended approach: Use XxlJob Attribute to mark business methods, system will automatically scan and register
+     * Example:
      *   #[XxlJob('discoverService')]
      *   public static function discover(): array { ... }
      *
-     * 以下配置仅用于向后兼容或特殊情况下的手动注册
-     * 如果使用 Attribute，可以删除此配置
+     * The following configuration is only for backward compatibility or manual registration in special cases
+     * If using Attribute, this configuration can be removed
      */
     'jobs' => [
     ]

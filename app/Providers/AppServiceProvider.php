@@ -12,14 +12,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // 注册 JobRegistry 为单例
+        // Register JobRegistry as singleton
         $this->app->singleton(JobRegistry::class, function ($app) {
             $registry = new JobRegistry();
             
-            // 扫描并注册所有带有 XxlJob Attribute 的方法
+            // Scan and register all methods with XxlJob Attribute
             $registry->scanAndRegister('Jobs');
             
-            // 兼容旧配置：从 config/xxl.php 中读取手动配置的 jobs
+            // Backward compatibility: read manually configured jobs from config/xxl.php
             $configJobs = config('xxl.jobs', []);
             foreach ($configJobs as $handler => $callable) {
                 if (is_array($callable) && count($callable) === 2) {

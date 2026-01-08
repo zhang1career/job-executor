@@ -9,38 +9,38 @@ use Paganini\Exceptions\UnsupportedOperationException;
 class ContainerLabelService
 {
     /**
-     * 获取同一容器组中的所有容器及其标签
+     * Get all containers and their labels in the same container group
      *
-     * 支持通过 Docker API 或 Kubernetes API 查询
+     * Supports querying via Docker API or Kubernetes API
      *
      * @return array
      * @throws UnsupportedOperationException
      */
     public function getContainersInGroup(): array
     {
-        // 优先尝试 Docker API
+        // Try Docker API first
         if ($this->isDockerEnvironment()) {
             return $this->getContainersFromDocker();
         }
 
-        // 尝试 Kubernetes API
+        // Try Kubernetes API
         if ($this->isKubernetesEnvironment()) {
             return $this->getContainersFromKubernetes();
         }
 
-        // 如果都不支持，返回空数组或抛出异常
+        // If neither is supported, return empty array or throw exception
         Log::error('Neither Docker nor Kubernetes environment detected');
         return [];
     }
 
     /**
-     * 检查是否为 Docker 环境
+     * Check if running in Docker environment
      *
      * @return bool
      */
     protected function isDockerEnvironment(): bool
     {
-        // 优先检查 Unix socket
+        // Check Unix socket first
         $dockerHost = env('DOCKER_HOST');
         if ($dockerHost && str_starts_with($dockerHost, 'unix://')) {
             $socketPath = str_replace('unix://', '', $dockerHost);
@@ -48,7 +48,7 @@ class ContainerLabelService
                 return true;
             }
         }
-        // 默认检查标准 socket 路径
+        // Check default standard socket path
         if (file_exists('/var/run/docker.sock')) {
             return true;
         }
@@ -57,13 +57,13 @@ class ContainerLabelService
     }
 
     /**
-     * 检查是否为 Kubernetes 环境
+     * Check if running in Kubernetes environment
      *
      * @return bool
      */
     protected function isKubernetesEnvironment(): bool
     {
-        // 检查是否存在 Kubernetes 服务账号 token
+        // Check if Kubernetes service account token exists
         $k8sTokenPath = '/var/run/secrets/kubernetes.io/serviceaccount/token';
         $k8sNamespacePath = '/var/run/secrets/kubernetes.io/serviceaccount/namespace';
 
@@ -71,7 +71,7 @@ class ContainerLabelService
     }
 
     /**
-     * 从 Docker API 获取容器信息
+     * Get container information from Docker API
      *
      * @return array
      */
@@ -81,11 +81,11 @@ class ContainerLabelService
         $dockerApiUrl = env('DOCKER_API_URL');
 
         try {
-            // 如果提供了 Docker API URL，使用 HTTP API
+            // If Docker API URL is provided, use HTTP API
             if ($dockerApiUrl) {
                 return $this->getContainersFromDockerHttp($dockerApiUrl);
             }
-            // 否则使用 Unix socket（需要安装 docker-php 库或使用 curl）
+            // Otherwise use Unix socket (requires docker-php library or curl)
             return $this->getContainersFromDockerSocket($dockerHost);
 
         } catch (Exception $e) {
@@ -97,7 +97,7 @@ class ContainerLabelService
     }
 
     /**
-     * 通过 HTTP API 获取 Docker 容器
+     * Get Docker containers via HTTP API
      *
      * @param string $apiUrl
      * @return array
@@ -109,7 +109,7 @@ class ContainerLabelService
     }
 
     /**
-     * 通过 Unix Socket 获取 Docker 容器
+     * Get Docker containers via Unix Socket
      *
      * @param string $socketPath
      * @return array
@@ -117,12 +117,12 @@ class ContainerLabelService
      */
     protected function getContainersFromDockerSocket(string $socketPath): array
     {
-        // 清理 socket 路径（移除 unix:// 前缀）
+        // Clean socket path (remove unix:// prefix)
         if (str_starts_with($socketPath, 'unix://')) {
             $socketPath = str_replace('unix://', '', $socketPath);
         }
 
-        // 处理符号链接：如果是符号链接，尝试解析实际路径
+        // Handle symlinks: if it's a symlink, try to resolve the actual path
         if (is_link($socketPath)) {
             $realPath = readlink($socketPath);
             Log::debug('Docker socket is a symlink', [
@@ -130,12 +130,12 @@ class ContainerLabelService
                 'target' => $realPath,
             ]);
 
-            // 如果是绝对路径，使用它；否则相对于符号链接的目录
+            // If it's an absolute path, use it; otherwise relative to the symlink's directory
             if (!str_starts_with($realPath, '/')) {
                 $realPath = dirname($socketPath) . '/' . $realPath;
             }
 
-            // 检查目标文件是否存在
+            // Check if target file exists
             if (file_exists($realPath)) {
                 $socketPath = $realPath;
                 Log::debug('Using resolved socket path', ['path' => $socketPath]);
@@ -144,13 +144,13 @@ class ContainerLabelService
                     'symlink' => $socketPath,
                     'target' => $realPath,
                 ]);
-                // 继续使用符号链接路径，curl 可能会处理
+                // Continue using symlink path, curl might handle it
             }
         }
 
-        // 验证 socket 路径
+        // Validate socket path
         if (!file_exists($socketPath)) {
-            // 提供更多诊断信息
+            // Provide more diagnostic information
             $possiblePaths = [
                 '/var/run/docker.sock',
                 '/tmp/docker.sock',
@@ -173,12 +173,12 @@ class ContainerLabelService
             throw new Exception($message);
         }
 
-        // 检查文件类型（应该是 socket）
+        // Check file type (should be socket)
         $fileType = filetype($socketPath);
         $filePerms = substr(sprintf('%o', fileperms($socketPath)), -4);
         $isLink = is_link($socketPath);
 
-        // 获取文件所有者和组（如果 posix 扩展可用）
+        // Get file owner and group (if posix extension is available)
         $fileOwner = 'unknown';
         $fileGroup = 'unknown';
         $currentUid = function_exists('posix_geteuid') ? posix_geteuid() : null;
@@ -207,7 +207,7 @@ class ContainerLabelService
             'is_executable' => is_executable($socketPath),
         ]);
 
-        // 对于符号链接，需要检查目标文件的类型
+        // For symlinks, need to check the target file's type
         $actualPath = $isLink ? (realpath($socketPath) ?: $socketPath) : $socketPath;
         if (file_exists($actualPath)) {
             $actualType = filetype($actualPath);
@@ -223,12 +223,12 @@ class ContainerLabelService
             throw new Exception("Docker socket not readable: $socketPath (perms: $filePerms, owner: $fileOwner, current uid: $currentUid). $suggestion");
         }
 
-        // 检查是否支持 Unix socket
+        // Check if Unix socket is supported
         if (!defined('CURLOPT_UNIX_SOCKET_PATH')) {
             throw new Exception('CURLOPT_UNIX_SOCKET_PATH is not supported. Requires PHP 7.0.7+ and curl 7.40+');
         }
 
-        // 检查 curl 版本信息
+        // Check curl version information
         $curlVersion = curl_version();
         Log::debug('cURL version info', [
             'version' => $curlVersion['version'] ?? 'unknown',
@@ -236,26 +236,26 @@ class ContainerLabelService
             'features' => $curlVersion['features'] ?? 0,
         ]);
 
-        // 使用 curl 通过 Unix socket 访问 Docker API
+        // Use curl to access Docker API via Unix socket
         $ch = curl_init();
 
-        // 设置 Unix socket 路径
+        // Set Unix socket path
         $socketSet = curl_setopt($ch, CURLOPT_UNIX_SOCKET_PATH, $socketPath);
         if (!$socketSet) {
             curl_close($ch);
             throw new Exception("Failed to set CURLOPT_UNIX_SOCKET_PATH: $socketPath");
         }
 
-        // 使用 Docker API v1.41（或让 Docker 自动选择版本）
+        // Use Docker API v1.41 (or let Docker auto-select version)
         curl_setopt($ch, CURLOPT_URL, 'http://localhost/containers/json?all=1');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_FAILONERROR, false); // 允许返回错误响应
+        curl_setopt($ch, CURLOPT_FAILONERROR, false); // Allow error responses
 
         $response = curl_exec($ch);
 
-        // 检查 curl_exec 是否成功
+        // Check if curl_exec succeeded
         if ($response === false) {
             $error = curl_error($ch);
             $errno = curl_errno($ch);
@@ -282,7 +282,7 @@ class ContainerLabelService
         $effectiveUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
         curl_close($ch);
 
-        // 记录调试信息
+        // Log debug information
         Log::debug('docker socket request', [
             'http_code' => $httpCode,
             'curl_error' => $curlError,
@@ -305,7 +305,7 @@ class ContainerLabelService
         $currentProject = $this->getCurrentDockerProject();
 
         foreach ($containers as $container) {
-            // 获取容器详细信息
+            // Get container detailed information
             $containerId = $container['Id'];
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_UNIX_SOCKET_PATH, $socketPath);
@@ -347,7 +347,7 @@ class ContainerLabelService
             $labels = $containerDetail['Config']['Labels'] ?? [];
             $containerProject = $labels['com.docker.compose.project'] ?? null;
 
-            // 只返回同一项目组的容器
+            // Only return containers from the same project group
             if (!$currentProject || $currentProject !== $containerProject) {
                 continue;
             }
@@ -380,14 +380,14 @@ class ContainerLabelService
     }
 
     /**
-     * 获取当前 Docker Compose 项目名称
+     * Get current Docker Compose project name
      *
      * @return string|null
      * @throws Exception
      */
     protected function getCurrentDockerProject(): ?string
     {
-        // 尝试从环境变量获取
+        // Try to get from environment variable
         $project = env('DOCKER_CONTAINER_GROUP_NAME');
         if (!$project) {
             throw new Exception('Please set DOCKER_CONTAINER_GROUP_NAME environment variable to the current Docker Compose project name.');
@@ -396,7 +396,7 @@ class ContainerLabelService
     }
 
     /**
-     * 从 Kubernetes API 获取容器信息
+     * Get container information from Kubernetes API
      *
      * @return array
      * @throws UnsupportedOperationException

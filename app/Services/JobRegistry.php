@@ -10,19 +10,19 @@ use ReflectionMethod;
 /**
  * Job Registry Service
  *
- * 自动发现和注册带有 XxlJob Attribute 的方法
+ * Automatically discovers and registers methods with XxlJob Attribute
  */
 class JobRegistry
 {
     /**
-     * @var array<string, array{0: class-string, 1: string}> 已注册的 jobs，格式：['handler' => [ClassName::class, 'methodName']]
+     * @var array<string, array{0: class-string, 1: string}> Registered jobs, format: ['handler' => [ClassName::class, 'methodName']]
      */
     private array $jobs = [];
 
     /**
-     * 扫描并注册所有带有 XxlJob Attribute 的方法
+     * Scan and register all methods with XxlJob Attribute
      *
-     * @param string $jobPath Job 类所在的目录路径，相对于 app 目录
+     * @param string $jobPath Directory path where Job classes are located, relative to app directory
      * @return void
      */
     public function scanAndRegister(string $jobPath = 'Jobs'): void
@@ -42,10 +42,10 @@ class JobRegistry
     }
 
     /**
-     * 扫描单个文件并注册其中的 Job 方法
+     * Scan a single file and register Job methods within it
      *
-     * @param string $filePath 文件完整路径
-     * @param string $jobPath Job 类所在的目录路径，相对于 app 目录
+     * @param string $filePath Full path to the file
+     * @param string $jobPath Directory path where Job classes are located, relative to app directory
      * @return void
      */
     private function scanFile(string $filePath, string $jobPath): void
@@ -58,7 +58,7 @@ class JobRegistry
 
         $reflection = new ReflectionClass($className);
 
-        // 只扫描公共静态方法
+        // Only scan public static methods
         foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_STATIC) as $method) {
             $attributes = $method->getAttributes(XxlJob::class);
 
@@ -78,15 +78,15 @@ class JobRegistry
     }
 
     /**
-     * 从文件路径获取完整的类名
+     * Get full class name from file path
      *
-     * @param string $filePath 文件完整路径
-     * @param string $jobPath Job 类所在的目录路径，相对于 app 目录
-     * @return string|null 完整的类名，如果无法确定则返回 null
+     * @param string $filePath Full path to the file
+     * @param string $jobPath Directory path where Job classes are located, relative to app directory
+     * @return string|null Full class name, or null if cannot be determined
      */
     private function getClassNameFromFile(string $filePath, string $jobPath): ?string
     {
-        // 获取相对于 app 目录的路径
+        // Get path relative to app directory
         $appPath = app_path();
         if (!str_starts_with($filePath, $appPath)) {
             return null;
@@ -96,17 +96,17 @@ class JobRegistry
         $relativePath = str_replace('.php', '', $relativePath);
         $relativePath = str_replace('/', '\\', $relativePath);
 
-        // 构建完整的类名（假设遵循 PSR-4 标准）
+        // Build full class name (assuming PSR-4 standard)
         $className = 'App\\' . $relativePath;
 
         return $className;
     }
 
     /**
-     * 获取已注册的 Job
+     * Get registered Job
      *
-     * @param string $handler 任务标识
-     * @return array{0: class-string, 1: string}|null 返回 [ClassName::class, 'methodName']，如果不存在则返回 null
+     * @param string $handler Job identifier
+     * @return array{0: class-string, 1: string}|null Returns [ClassName::class, 'methodName'], or null if not found
      */
     public function getJob(string $handler): ?array
     {
@@ -114,9 +114,9 @@ class JobRegistry
     }
 
     /**
-     * 检查 Job 是否已注册
+     * Check if Job is registered
      *
-     * @param string $handler 任务标识
+     * @param string $handler Job identifier
      * @return bool
      */
     public function hasJob(string $handler): bool
@@ -125,7 +125,7 @@ class JobRegistry
     }
 
     /**
-     * 获取所有已注册的 Jobs
+     * Get all registered Jobs
      *
      * @return array<string, array{0: class-string, 1: string}>
      */
@@ -135,10 +135,10 @@ class JobRegistry
     }
 
     /**
-     * 手动注册一个 Job（用于向后兼容或特殊情况）
+     * Manually register a Job (for backward compatibility or special cases)
      *
-     * @param string $handler 任务标识
-     * @param array{0: class-string, 1: string} $callable 可调用对象，格式：[ClassName::class, 'methodName']
+     * @param string $handler Job identifier
+     * @param array{0: class-string, 1: string} $callable Callable object, format: [ClassName::class, 'methodName']
      * @return void
      */
     public function register(string $handler, array $callable): void

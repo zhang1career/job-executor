@@ -26,7 +26,7 @@ class XxlJobExecutor implements ShouldQueue
 
 
     /**
-     * 创建任务实例，传递参数
+     * Create job instance with parameters
      */
     public function __construct(array $callable,
                                 mixed $param,
@@ -40,7 +40,7 @@ class XxlJobExecutor implements ShouldQueue
     }
 
     /**
-     * 执行任务
+     * Execute the job
      */
     public function handle(): void
     {
@@ -89,10 +89,10 @@ class XxlJobExecutor implements ShouldQueue
     }
 
     /**
-     * 发送回调请求到调度中心
+     * Send callback request to scheduler
      *
-     * @param int $handleCode 执行结果代码（200=成功, 500=失败, 502=超时）
-     * @param string $handleMsg 执行结果消息
+     * @param int $handleCode Execution result code (200=success, 500=failure, 502=timeout)
+     * @param string $handleMsg Execution result message
      * @return bool
      * @throws GuzzleException
      */

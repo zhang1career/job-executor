@@ -21,7 +21,7 @@ class XxlJobController
 
 
     /**
-     * 执行器心跳
+     * Executor heartbeat
      * @return array
      */
     public function beat(): array
@@ -31,20 +31,20 @@ class XxlJobController
 
 
     /**
-     * 执行任务 api
+     * Execute job API
      * {
-     *   "jobId":1,                                  // 任务ID
-     *   "executorHandler":"demoJobHandler",         // 任务标识
-     *   "executorParams":"demoJobHandler",          // 任务参数
-     *   "executorBlockStrategy":"COVER_EARLY",      // 任务阻塞策略，可选值参考 com.xxl.job.core.enums.ExecutorBlockStrategyEnum
-     *   "executorTimeout":0,                        // 任务超时时间，单位秒，大于零时生效
-     *   "logId":1,                                  // 本次调度日志ID
-     *   "logDateTime":1586629003729,                // 本次调度日志时间
-     *   "glueType":"BEAN",                          // 任务模式，可选值参考 com.xxl.job.core.glue.GlueTypeEnum
-     *   "glueSource":"xxx",                         // GLUE脚本代码
-     *   "glueUpdatetime":1586629003727,             // GLUE脚本更新时间，用于判定脚本是否变更以及是否需要刷新
-     *   "broadcastIndex":0,                         // 分片参数：当前分片
-     *   "broadcastTotal":0                          // 分片参数：总分片
+     *   "jobId":1,                                  // Job ID
+     *   "executorHandler":"demoJobHandler",         // Job identifier
+     *   "executorParams":"demoJobHandler",          // Job parameters
+     *   "executorBlockStrategy":"COVER_EARLY",      // Job blocking strategy, see com.xxl.job.core.enums.ExecutorBlockStrategyEnum
+     *   "executorTimeout":0,                        // Job timeout in seconds, effective when greater than zero
+     *   "logId":1,                                  // Current scheduling log ID
+     *   "logDateTime":1586629003729,                // Current scheduling log timestamp
+     *   "glueType":"BEAN",                          // Job mode, see com.xxl.job.core.glue.GlueTypeEnum
+     *   "glueSource":"xxx",                         // GLUE script code
+     *   "glueUpdatetime":1586629003727,             // GLUE script update time, used to determine if script changed and needs refresh
+     *   "broadcastIndex":0,                         // Sharding parameter: current shard
+     *   "broadcastTotal":0                          // Sharding parameter: total shards
      * }
      * @return array
      */
@@ -93,19 +93,19 @@ class XxlJobController
 
 
     /**
-     * 说明：终止任务
+     * Kill job
      * ------
-     * 地址格式：{执行器内嵌服务跟地址}/kill
-     * Header：
-     * XXL-JOB-ACCESS-TOKEN : {请求令牌}
-     * 请求数据格式如下，放置在 RequestBody 中，JSON格式：
+     * URL format: {executor embedded service base URL}/kill
+     * Header:
+     * XXL-JOB-ACCESS-TOKEN : {request token}
+     * Request data format (JSON in RequestBody):
      * {
-     * "jobId":1       // 任务ID
+     * "jobId":1       // Job ID
      * }
-     * 响应数据格式：
+     * Response data format:
      * {
-     * "code": 200,      // 200 表示正常、其他失败
-     * "msg": null       // 错误提示消息
+     * "code": 200,      // 200 means success, others mean failure
+     * "msg": null       // Error message
      * }
      */
     public function kill()
