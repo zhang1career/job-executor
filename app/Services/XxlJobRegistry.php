@@ -2,23 +2,20 @@
 
 namespace App\Services;
 
-use App\Attributes\XxlJob;
 use Illuminate\Support\Facades\Log;
+use Paganini\XxlJobExecutor\Attributes\XxlJob;
+use Paganini\XxlJobExecutor\JobRegistry as PaganiniXxlJobRegistry;
 use ReflectionClass;
 use ReflectionMethod;
 
 /**
  * Job Registry Service
  *
- * Automatically discovers and registers methods with XxlJob Attribute
+ * Laravel-specific wrapper that extends Paganini JobRegistry
+ * Adds scanning functionality for XxlJob attributes
  */
-class JobRegistry
+class XxlJobRegistry extends PaganiniXxlJobRegistry
 {
-    /**
-     * @var array<string, array{0: class-string, 1: string}> Registered jobs, format: ['handler' => [ClassName::class, 'methodName']]
-     */
-    private array $jobs = [];
-
     /**
      * Scan and register all methods with XxlJob Attribute
      *
@@ -38,7 +35,7 @@ class JobRegistry
             $this->scanFile($file, $jobPath);
         }
 
-        Log::info("[jobreg] registered " . count($this->jobs) . " jobs");
+        Log::info("[jobreg] registered " . count($this->getAllJobs()) . " jobs");
     }
 
     /**
@@ -51,8 +48,8 @@ class JobRegistry
     private function scanFile(string $filePath, string $jobPath): void
     {
         $className = $this->getClassNameFromFile($filePath, $jobPath);
-
         if (!$className || !class_exists($className)) {
+            Log::warning("[jobreg] class not found for file: {$filePath}");
             return;
         }
 
@@ -67,12 +64,12 @@ class JobRegistry
                 $xxlJob = $attribute->newInstance();
                 $handler = $xxlJob->handler;
 
-                if (isset($this->jobs[$handler])) {
+                if ($this->hasJob($handler)) {
                     Log::warning("[jobreg] duplicate handler '{$handler}' found. Overwriting previous registration.");
                 }
 
-                $this->jobs[$handler] = [$className, $method->getName()];
-                Log::debug("[jobreg] registered job: {$handler} => {$className}::{$method->getName()}");
+                parent::register($handler, [$className, $method->getName()]);
+                Log::debug("[jobreg] auto registered job: {$handler} => {$className}::{$method->getName()}");
             }
         }
     }
@@ -103,38 +100,6 @@ class JobRegistry
     }
 
     /**
-     * Get registered Job
-     *
-     * @param string $handler Job identifier
-     * @return array{0: class-string, 1: string}|null Returns [ClassName::class, 'methodName'], or null if not found
-     */
-    public function getJob(string $handler): ?array
-    {
-        return $this->jobs[$handler] ?? null;
-    }
-
-    /**
-     * Check if Job is registered
-     *
-     * @param string $handler Job identifier
-     * @return bool
-     */
-    public function hasJob(string $handler): bool
-    {
-        return isset($this->jobs[$handler]);
-    }
-
-    /**
-     * Get all registered Jobs
-     *
-     * @return array<string, array{0: class-string, 1: string}>
-     */
-    public function getAllJobs(): array
-    {
-        return $this->jobs;
-    }
-
-    /**
      * Manually register a Job (for backward compatibility or special cases)
      *
      * @param string $handler Job identifier
@@ -143,7 +108,7 @@ class JobRegistry
      */
     public function register(string $handler, array $callable): void
     {
-        $this->jobs[$handler] = $callable;
+        parent::register($handler, $callable);
         Log::debug("[jobreg] manually registered job: {$handler}");
     }
 }

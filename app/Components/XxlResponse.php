@@ -31,14 +31,4 @@ class XxlResponse
             'msg' => $message
         ];
     }
-
-    public static function jobCallback(int $logId, int $code, string $msg = ""): array
-    {
-        return [
-            "logId" => $logId,
-            "logDateTim" => time(),
-            "handleCode" => $code,
-            "handleMsg" => $msg,
-        ];
-    }
 }

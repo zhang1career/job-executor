@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Attributes\XxlJob;
+use Paganini\XxlJobExecutor\Attributes\XxlJob;
 use App\Services\ApiService;
 use App\Utils\ExceptionUtil;
 use Exception;

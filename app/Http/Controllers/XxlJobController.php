@@ -4,18 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Components\XxlResponse;
 use App\Queues\XxlJobExecutor;
-use App\Services\JobRegistry;
+use App\Services\Adapters\XxlJobStorageFileLockAdapter;
+use App\Services\XxlJobRegistry;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
-use Illuminate\Support\Facades\Storage;
+use Paganini\XxlJobExecutor\JobFileLock;
+use Paganini\XxlJobExecutor\JobRequest;
+use Paganini\XxlJobExecutor\JobRequestHandler;
 
 class XxlJobController
 {
-    const JOB_PATH = 'jobs';
-    const JOB_FILE_SUFFIX = '.job';
-
     public function __construct(
-        private readonly JobRegistry $jobRegistry
+        private readonly XxlJobRegistry $jobRegistry
     ) {
     }
 
@@ -51,44 +51,36 @@ class XxlJobController
     public function run()
     {
         // get request param
-        $request = Request::post();
-        Log::debug('[xxljob] param: request=', $request);
-        $jobId = $request['jobId'];
-        $executorHandler = $request['executorHandler'];
-        $executorParams = $request['executorParams'];
-        $logId = $request['logId'];
+        $requestData = Request::post();
+        Log::debug('[xxljob] param: request=', $requestData);
 
-        // create job file
-        $jobFilePath = $this->buildJobFilePath($jobId);
-        $storage = Storage::disk('local');
-        $has = $storage->put($jobFilePath, $jobId);
-        if ($has === false) {
-            Log::error('[xxljob] failed, cannot create job file, filepath=' . $jobFilePath);
-            return XxlResponse::fail('creating job file failed! filepath=' . $jobFilePath);
+        // Create job request from array
+        $requestJob = JobRequest::fromArray($requestData);
+
+        // Create request handler with dependencies
+        $fileLock = new JobFileLock(new XxlJobStorageFileLockAdapter());
+        $requestHandler = new JobRequestHandler(
+            $this->jobRegistry,
+            $fileLock
+        );
+
+        // Handle request
+        $acceptedJob = $requestHandler->handle($requestJob);
+        if (!$acceptedJob->isSuccess()) {
+            return XxlResponse::fail($acceptedJob->getMessage() ?? 'Job execution failed');
         }
 
-        // get job from registry
-        $job = $this->jobRegistry->getJob($executorHandler);
-        if (!$job) {
-            $storage->delete($jobFilePath);
-            Log::error('[xxljob] failed, executor handler not registered! handler=' . $executorHandler);
-            return XxlResponse::fail('executor handler not registered! handler=' . $executorHandler);
-        }
+        // Extract job information from response
+        $jobData = $acceptedJob->getData();
+        $job = $jobData['job'];
+        $params = $jobData['params'];
+        $logId = $jobData['logId'];
+        $filePath = $jobData['filePath'];
 
-        // dispatch job
-        XxlJobExecutor::dispatch($job, $executorParams, $logId, $jobFilePath);
+        // Dispatch job to queue
+        XxlJobExecutor::dispatch($job, $params, $logId, $filePath);
 
         return XxlResponse::success();
-    }
-
-    /**
-     * @param mixed $jobId
-     * @return string
-     */
-    private function buildJobFilePath(mixed $jobId): string
-    {
-        $jobFileName = $jobId . self::JOB_FILE_SUFFIX;
-        return self::JOB_PATH . '/' . $jobFileName;
     }
 
 
@@ -113,17 +105,16 @@ class XxlJobController
         // get request param
         $request = Request::post();
         Log::debug('[xxljob] kill param: request=', $request);
-        $jobId = $request['jobId'];
+        $jobId = (string)$request['jobId'];
 
-        // delete job file
-        $jobFilePath = $this->buildJobFilePath($jobId);
-        $storage = Storage::disk('local');
-        if (!$storage->exists($jobFilePath)) {
+        // delete job file using adapter
+        $fileLock = new JobFileLock(new XxlJobStorageFileLockAdapter());
+        if (!$fileLock->exists($jobId)) {
             Log::info('[xxljob] job file not exists, jobId=' . $jobId);
             return XxlResponse::success(null, 'job file not exists, jobId=' . $jobId);
         }
 
-        $storage->delete($jobFilePath);
+        $fileLock->delete($jobId);
         Log::debug('[xxljob] job killed, jobId=' . $jobId);
         return XxlResponse::success();
     }

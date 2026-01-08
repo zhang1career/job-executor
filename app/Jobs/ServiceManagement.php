@@ -2,8 +2,8 @@
 
 namespace App\Jobs;
 
-use App\Attributes\XxlJob;
 use App\Services\DiscoverService;
+use Paganini\XxlJobExecutor\Attributes\XxlJob;
 use Exception;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Facades\Log;
