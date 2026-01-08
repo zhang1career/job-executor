@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Attributes\XxlJob;
 use App\Services\DiscoverService;
 use Exception;
 use Illuminate\Contracts\Container\BindingResolutionException;
@@ -13,6 +14,7 @@ class ServiceManagement
      * @return array [bool success, mixed data, string|null errorMessage]
      * @throws BindingResolutionException
      */
+    #[XxlJob('discoverService')]
     public static function discover(): array
     {
         $discoverService = app()->make(DiscoverService::class);

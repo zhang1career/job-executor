@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Components\XxlResponse;
 use App\Queues\XxlJobExecutor;
+use App\Services\JobRegistry;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Storage;
@@ -12,6 +13,11 @@ class XxlJobController
 {
     const JOB_PATH = 'jobs';
     const JOB_FILE_SUFFIX = '.job';
+
+    public function __construct(
+        private readonly JobRegistry $jobRegistry
+    ) {
+    }
 
 
     /**
@@ -60,24 +66,18 @@ class XxlJobController
             Log::error('[xxljob] failed, cannot create job file, filepath=' . $jobFilePath);
             return XxlResponse::fail('creating job file failed! filepath=' . $jobFilePath);
         }
-        // get config info
-        $jobs = config('xxl')['jobs'];
-        if (!isset($jobs[$executorHandler])) {
+
+        // get job from registry
+        $job = $this->jobRegistry->getJob($executorHandler);
+        if (!$job) {
             $storage->delete($jobFilePath);
-            Log::error('[xxljob] failed, executor handler not configured! handler=' . $executorHandler);
-            return XxlResponse::fail('executor handler not configured! handler=' . $executorHandler);
-        }
-        $objCall = $jobs[$executorHandler];
-        if (!$objCall) {
-            $storage->delete($jobFilePath);
-            Log::error('[xxljob] failed, executor handler invalid! handler=' . $executorHandler);
-            return XxlResponse::fail('executor handler invalid! handler=' . $executorHandler);
+            Log::error('[xxljob] failed, executor handler not registered! handler=' . $executorHandler);
+            return XxlResponse::fail('executor handler not registered! handler=' . $executorHandler);
         }
 
         // dispatch job
-        XxlJobExecutor::dispatch($objCall, $executorParams, $logId, $jobFilePath);
+        XxlJobExecutor::dispatch($job, $executorParams, $logId, $jobFilePath);
 
-//        return XxlResponse::jobCallback($logId, 200, json_encode($data));
         return XxlResponse::success();
     }
 
