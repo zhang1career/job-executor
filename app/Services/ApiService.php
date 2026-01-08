@@ -55,7 +55,7 @@ class ApiService
             if (json_last_error() !== JSON_ERROR_NONE || !is_array($tokens)) {
                 Log::error('[account] login failed: invalid JSON response', [
                     'json_error' => json_last_error_msg(),
-                    'response_body' => substr($body, 0, 500), // 只记录前500字符避免日志过长
+                    'response_body' => substr($body, 0, 500), // Only log first 500 characters to avoid excessive log length
                 ]);
                 return null;
             }
@@ -103,7 +103,7 @@ class ApiService
             if (json_last_error() !== JSON_ERROR_NONE || !is_array($tokens)) {
                 Log::error('[account] token refresh failed: invalid JSON response', [
                     'json_error' => json_last_error_msg(),
-                    'response_body' => substr($body, 0, 500), // 只记录前500字符避免日志过长
+                    'response_body' => substr($body, 0, 500), // Only log first 500 characters to avoid excessive log length
                 ]);
                 return null;
             }

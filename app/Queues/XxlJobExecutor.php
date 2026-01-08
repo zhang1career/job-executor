@@ -2,132 +2,69 @@
 
 namespace App\Queues;
 
-use Exception;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
+use App\Services\Adapters\XxlJobGuzzleCallbackClientAdapter;
+use App\Services\Adapters\XxlJobStorageFileLockAdapter;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
+use Paganini\XxlJobExecutor\JobExecutionHandler;
 
-
+/**
+ * XxlJobExecutor
+ *
+ * Laravel Queue job that wraps Paganini JobExecutionHandler
+ * Handles asynchronous job execution
+ */
 class XxlJobExecutor implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-
     private array $callable;
     private mixed $param;
     private int $logId;
-    private string $lock;
-
+    private string $jobId;
 
     /**
-     * 创建任务实例，传递参数
+     * Create job instance with parameters
      */
-    public function __construct(array $callable,
-                                mixed $param,
-                                int   $logId,
-                                mixed $lock)
-    {
+    public function __construct(
+        array $callable,
+        mixed $param,
+        int $logId,
+        string $filePath
+    ) {
         $this->callable = $callable;
         $this->param = $param;
         $this->logId = $logId;
-        $this->lock = $lock;
+        // Extract jobId from filePath (e.g., "jobs/123.job" -> "123")
+        $this->jobId = basename($filePath, '.job');
     }
 
     /**
-     * 执行任务
+     * Execute the job
      */
     public function handle(): void
     {
-        Log::debug('[xxl-job] callback start, logId=' . $this->logId);
+        Log::debug('[xxljob] callback start, logId=' . $this->logId);
 
-        [$_ok, $data, $msg] = call_user_func($this->callable, $this->param);
-        Storage::disk('local')->delete($this->lock);
-        if (!$_ok) {
-            $ok = $this->callbackError($msg);
-            if (!$ok) {
-                Log::error('[xxl-job] callbackError failed for logId=' . $this->logId);
-            }
-            return;
-        }
+        // Create execution handler with adapters
+        $executionHandler = new JobExecutionHandler(
+            new XxlJobGuzzleCallbackClientAdapter(
+                config('xxl.admin_address'),
+                config('xxl.token')
+            ),
+            new XxlJobStorageFileLockAdapter()
+        );
 
-        $ok = $this->callbackOk($data);
-        if (!$ok) {
-            Log::error('[xxl-job] callbackOk failed for logId=' . $this->logId);
-        }
-    }
-
-    private function callbackOk(mixed $data): bool
-    {
-        try {
-            return $this->sendCallback(200, json_encode($data));
-        } catch (GuzzleException $e) {
-            Log::error('[xxl-job] callbackOk exception of Guzzle: ' . $e->getMessage());
-            return false;
-        } catch (Exception $e) {
-            Log::error('[xxl-job] callbackOk exception: ' . $e->getMessage());
-            return false;
-        }
-    }
-
-    private function callbackError(string $msg): bool
-    {
-        try {
-            return $this->sendCallback(500, $msg);
-        } catch (GuzzleException $e) {
-            Log::error('[xxl-job] callbackError exception of Guzzle: ' . $e->getMessage());
-            return false;
-        } catch (Exception $e) {
-            Log::error('[xxl-job] callbackError exception: ' . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * 发送回调请求到调度中心
-     *
-     * @param int $handleCode 执行结果代码（200=成功, 500=失败, 502=超时）
-     * @param string $handleMsg 执行结果消息
-     * @return bool
-     * @throws GuzzleException
-     */
-    private function sendCallback(int $handleCode, string $handleMsg): bool
-    {
-        $xxljobAdminUrl = config('xxl.admin_address');
-        $xxljobAccessToken = config('xxl.token');
-        $callbackUrl = $xxljobAdminUrl . '/api/callback';
-
-        // prepare callback data
-        $headers = [
-            'Content-Type' => 'application/json',
-            'XXL-JOB-ACCESS-TOKEN' => $xxljobAccessToken
-        ];
-        $requestBody = [
-            [
-                'logId' => $this->logId,
-                'logDateTim' => (int)(microtime(true) * 1000),
-                'handleCode' => $handleCode,
-                'handleMsg' => $handleMsg
-            ]
-        ];
-
-        // callback request
-        $httpClient = new Client();
-        $response = $httpClient->post($callbackUrl, [
-            'headers' => $headers,
-            'json' => $requestBody,
-            'timeout' => 10
-        ]);
-        if ($response->getStatusCode() !== 200) {
-            Log::error('[xxl-job] callback failed, status code: ' . $response->getStatusCode());
-            return false;
-        }
-
-        return true;
+        // Execute job using handler
+        $executionHandler->execute(
+            $this->callable,
+            $this->param,
+            $this->logId,
+            $this->jobId
+        );
     }
 }

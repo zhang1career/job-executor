@@ -19,19 +19,19 @@ class DiscoverService
      */
     public function discover(): array
     {
-        // 1. 查询同一个容器组中全部容器的标签
+        // 1. Query all container labels in the same container group
         $containers = $this->containerLabelService->getContainersInGroup();
 
-        // 2. 取标签 appmap 的值，以及容器名称，构建 [容器名称：appmap值] 的字典
+        // 2. Extract appmap label values and container names, build dictionary [container_name: appmap_value]
         $containerAppMap = $this->filterAppMap($containers);
 
-        // 3. 解析 appmap 值
+        // 3. Parse appmap values
         $serviceMap = $this->parseServiceMap($containerAppMap);
 
-        // 4. 将步骤3中的组合，组成新的字典
+        // 4. Combine results from step 3 into a new dictionary
         $serviceDict = $this->buildServiceDict($serviceMap);
 
-        // 5. 写入 redis
+        // 5. Write to Redis
         $writtenKeys = $this->writeToRedis($serviceDict);
 
         return [
@@ -60,10 +60,10 @@ class DiscoverService
     }
 
     /**
-     * 解析得到：容器名称 - 服务名称 - 容器端口号的组合
+     * Parse to get combinations of: container name - service name - container port
      *
-     * appmap是字符串，由逗号（,）分隔出小单元；
-     * 每一个单元中是冒号（:）分割的 key-value 对。其中 key 是服务名称，value是容器端口号
+     * appmap is a string, with comma (,) separating units;
+     * each unit contains colon (:) separated key-value pairs. Key is service name, value is container port
      *
      * @param array $containerAppMap
      * @return array
@@ -72,7 +72,7 @@ class DiscoverService
     {
         $serviceMappings = [];
         foreach ($containerAppMap as $containerName => $appMapStr) {
-            // 按逗号分隔小单元
+            // Split by comma into units
             $appMaps = explode(',', $appMapStr);
 
             foreach ($appMaps as $_appMap) {
@@ -81,7 +81,7 @@ class DiscoverService
                     continue;
                 }
 
-                // 按冒号分割 key-value
+                // Split by colon into key-value
                 $_appMapEntry = explode(':', $_appMap);
                 if (count($_appMapEntry) < 2) {
                     continue;
@@ -102,7 +102,7 @@ class DiscoverService
     }
 
     /**
-     * 以服务名称为 key，容器名称:容器端口为value（如果有多个，按逗号分隔）
+     * Use service name as key, container_name:container_port as value (if multiple, separated by comma)
      *
      * @param array $serviceMappings
      * @return array
@@ -118,7 +118,7 @@ class DiscoverService
             }
             $serviceDictionary[$serviceName][] = $value;
         }
-        // 将数组转换为逗号分隔的字符串
+        // Convert array to comma-separated string
         foreach ($serviceDictionary as $serviceName => $values) {
             $serviceDictionary[$serviceName] = implode(',', $values);
         }
@@ -126,10 +126,10 @@ class DiscoverService
     }
 
     /**
-     * 写入 redis，有效期1天
+     * Write to Redis with 1 day expiration
      *
-     * 以 key 构建出 redis 的键，key = reg:serv:key，
-     * 以 value 作为 redis 的值
+     * Build Redis key from service name: key = reg:serv:service_name,
+     * use value as Redis value
      *
      * @param array $serviceDict
      * @return array

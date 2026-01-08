@@ -4,18 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Components\XxlResponse;
 use App\Queues\XxlJobExecutor;
+use App\Services\Adapters\XxlJobStorageFileLockAdapter;
+use App\Services\XxlJobRegistry;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
-use Illuminate\Support\Facades\Storage;
+use Paganini\XxlJobExecutor\JobFileLock;
+use Paganini\XxlJobExecutor\JobRequest;
+use Paganini\XxlJobExecutor\JobRequestHandler;
 
 class XxlJobController
 {
-    const JOB_PATH = 'jobs';
-    const JOB_FILE_SUFFIX = '.job';
+    public function __construct(
+        private readonly XxlJobRegistry $jobRegistry
+    ) {
+    }
 
 
     /**
-     * 执行器心跳
+     * Executor heartbeat
      * @return array
      */
     public function beat(): array
@@ -25,87 +31,73 @@ class XxlJobController
 
 
     /**
-     * 执行任务 api
+     * Execute job API
      * {
-     *   "jobId":1,                                  // 任务ID
-     *   "executorHandler":"demoJobHandler",         // 任务标识
-     *   "executorParams":"demoJobHandler",          // 任务参数
-     *   "executorBlockStrategy":"COVER_EARLY",      // 任务阻塞策略，可选值参考 com.xxl.job.core.enums.ExecutorBlockStrategyEnum
-     *   "executorTimeout":0,                        // 任务超时时间，单位秒，大于零时生效
-     *   "logId":1,                                  // 本次调度日志ID
-     *   "logDateTime":1586629003729,                // 本次调度日志时间
-     *   "glueType":"BEAN",                          // 任务模式，可选值参考 com.xxl.job.core.glue.GlueTypeEnum
-     *   "glueSource":"xxx",                         // GLUE脚本代码
-     *   "glueUpdatetime":1586629003727,             // GLUE脚本更新时间，用于判定脚本是否变更以及是否需要刷新
-     *   "broadcastIndex":0,                         // 分片参数：当前分片
-     *   "broadcastTotal":0                          // 分片参数：总分片
+     *   "jobId":1,                                  // Job ID
+     *   "executorHandler":"demoJobHandler",         // Job identifier
+     *   "executorParams":"demoJobHandler",          // Job parameters
+     *   "executorBlockStrategy":"COVER_EARLY",      // Job blocking strategy, see com.xxl.job.core.enums.ExecutorBlockStrategyEnum
+     *   "executorTimeout":0,                        // Job timeout in seconds, effective when greater than zero
+     *   "logId":1,                                  // Current scheduling log ID
+     *   "logDateTime":1586629003729,                // Current scheduling log timestamp
+     *   "glueType":"BEAN",                          // Job mode, see com.xxl.job.core.glue.GlueTypeEnum
+     *   "glueSource":"xxx",                         // GLUE script code
+     *   "glueUpdatetime":1586629003727,             // GLUE script update time, used to determine if script changed and needs refresh
+     *   "broadcastIndex":0,                         // Sharding parameter: current shard
+     *   "broadcastTotal":0                          // Sharding parameter: total shards
      * }
      * @return array
      */
     public function run()
     {
         // get request param
-        $request = Request::post();
-        Log::debug('[xxljob] param: request=', $request);
-        $jobId = $request['jobId'];
-        $executorHandler = $request['executorHandler'];
-        $executorParams = $request['executorParams'];
-        $logId = $request['logId'];
+        $requestData = Request::post();
+        Log::debug('[xxljob] param: request=', $requestData);
 
-        // create job file
-        $jobFilePath = $this->buildJobFilePath($jobId);
-        $storage = Storage::disk('local');
-        $has = $storage->put($jobFilePath, $jobId);
-        if ($has === false) {
-            Log::error('[xxljob] failed, cannot create job file, filepath=' . $jobFilePath);
-            return XxlResponse::fail('creating job file failed! filepath=' . $jobFilePath);
-        }
-        // get config info
-        $jobs = config('xxl')['jobs'];
-        if (!isset($jobs[$executorHandler])) {
-            $storage->delete($jobFilePath);
-            Log::error('[xxljob] failed, executor handler not configured! handler=' . $executorHandler);
-            return XxlResponse::fail('executor handler not configured! handler=' . $executorHandler);
-        }
-        $objCall = $jobs[$executorHandler];
-        if (!$objCall) {
-            $storage->delete($jobFilePath);
-            Log::error('[xxljob] failed, executor handler invalid! handler=' . $executorHandler);
-            return XxlResponse::fail('executor handler invalid! handler=' . $executorHandler);
+        // Create job request from array
+        $requestJob = JobRequest::fromArray($requestData);
+
+        // Create request handler with dependencies
+        $fileLock = new JobFileLock(new XxlJobStorageFileLockAdapter());
+        $requestHandler = new JobRequestHandler(
+            $this->jobRegistry,
+            $fileLock
+        );
+
+        // Handle request
+        $acceptedJob = $requestHandler->handle($requestJob);
+        if (!$acceptedJob->isSuccess()) {
+            return XxlResponse::fail($acceptedJob->getMessage() ?? 'Job execution failed');
         }
 
-        // dispatch job
-        XxlJobExecutor::dispatch($objCall, $executorParams, $logId, $jobFilePath);
+        // Extract job information from response
+        $jobData = $acceptedJob->getData();
+        $job = $jobData['job'];
+        $params = $jobData['params'];
+        $logId = $jobData['logId'];
+        $filePath = $jobData['filePath'];
 
-//        return XxlResponse::jobCallback($logId, 200, json_encode($data));
+        // Dispatch job to queue
+        XxlJobExecutor::dispatch($job, $params, $logId, $filePath);
+
         return XxlResponse::success();
     }
 
-    /**
-     * @param mixed $jobId
-     * @return string
-     */
-    private function buildJobFilePath(mixed $jobId): string
-    {
-        $jobFileName = $jobId . self::JOB_FILE_SUFFIX;
-        return self::JOB_PATH . '/' . $jobFileName;
-    }
-
 
     /**
-     * 说明：终止任务
+     * Kill job
      * ------
-     * 地址格式：{执行器内嵌服务跟地址}/kill
-     * Header：
-     * XXL-JOB-ACCESS-TOKEN : {请求令牌}
-     * 请求数据格式如下，放置在 RequestBody 中，JSON格式：
+     * URL format: {executor embedded service base URL}/kill
+     * Header:
+     * XXL-JOB-ACCESS-TOKEN : {request token}
+     * Request data format (JSON in RequestBody):
      * {
-     * "jobId":1       // 任务ID
+     * "jobId":1       // Job ID
      * }
-     * 响应数据格式：
+     * Response data format:
      * {
-     * "code": 200,      // 200 表示正常、其他失败
-     * "msg": null       // 错误提示消息
+     * "code": 200,      // 200 means success, others mean failure
+     * "msg": null       // Error message
      * }
      */
     public function kill()
@@ -113,17 +105,16 @@ class XxlJobController
         // get request param
         $request = Request::post();
         Log::debug('[xxljob] kill param: request=', $request);
-        $jobId = $request['jobId'];
+        $jobId = (string)$request['jobId'];
 
-        // delete job file
-        $jobFilePath = $this->buildJobFilePath($jobId);
-        $storage = Storage::disk('local');
-        if (!$storage->exists($jobFilePath)) {
+        // delete job file using adapter
+        $fileLock = new JobFileLock(new XxlJobStorageFileLockAdapter());
+        if (!$fileLock->exists($jobId)) {
             Log::info('[xxljob] job file not exists, jobId=' . $jobId);
             return XxlResponse::success(null, 'job file not exists, jobId=' . $jobId);
         }
 
-        $storage->delete($jobFilePath);
+        $fileLock->delete($jobId);
         Log::debug('[xxljob] job killed, jobId=' . $jobId);
         return XxlResponse::success();
     }

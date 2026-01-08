@@ -1,9 +1,9 @@
 -- =====================================================
--- Laravel Queue Jobs 相关表的 SQL Schema
--- 对应 migration: 0001_01_01_000002_create_jobs_table.php
+-- SQL Schema for Laravel Queue Jobs related tables
+-- Corresponds to migration: 0001_01_01_000002_create_jobs_table.php
 -- =====================================================
 
--- 1. 创建 jobs 表（存储队列任务）
+-- 1. Create jobs table (stores queue jobs)
 CREATE TABLE IF NOT EXISTS `jobs` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `queue` VARCHAR(255) NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS `jobs` (
     INDEX `jobs_queue_index` (`queue`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. 创建 job_batches 表（存储批量任务信息）
+-- 2. Create job_batches table (stores batch job information)
 CREATE TABLE IF NOT EXISTS `job_batches` (
     `id` VARCHAR(255) NOT NULL,
     `name` VARCHAR(255) NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `job_batches` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3. 创建 failed_jobs 表（存储失败的任务）
+-- 3. Create failed_jobs table (stores failed jobs)
 CREATE TABLE IF NOT EXISTS `failed_jobs` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` VARCHAR(255) NOT NULL,

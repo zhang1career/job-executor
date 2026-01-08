@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use Paganini\XxlJobExecutor\Attributes\XxlJob;
 use App\Services\ApiService;
 use App\Utils\ExceptionUtil;
 use Exception;
@@ -14,6 +15,7 @@ class RuleBroker
      * @return array [bool success, mixed data, string|null errorMessage]
      * @throws BindingResolutionException
      */
+    #[XxlJob('loginRuleBroker')]
     public static function login(): array
     {
         $apiService = app()->make(ApiService::class);
@@ -43,6 +45,7 @@ class RuleBroker
      * @return array [bool success, mixed data, string|null errorMessage]
      * @throws BindingResolutionException
      */
+    #[XxlJob('refreshRuleBroker')]
     public static function refresh(): array
     {
         $apiService = app()->make(ApiService::class);
