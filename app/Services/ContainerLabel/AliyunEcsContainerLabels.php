@@ -6,7 +6,7 @@ use Exception;
 use Illuminate\Support\Facades\Log;
 
 /**
- * ECS instances in a VPC IPv4 CIDR. Each row has name and appmap (ECS tag "appmap") for DiscoverService.
+ * ECS instances in a VPC IPv4 CIDR. Each row has name (primary VPC private IPv4) and appmap (ECS tag "appmap") for DiscoverService.
  */
 trait AliyunEcsContainerLabels
 {
@@ -73,16 +73,8 @@ trait AliyunEcsContainerLabels
                 continue;
             }
 
-            $name = (string) ($inst['InstanceName'] ?? '');
-            if ($name === '') {
-                $name = (string) ($inst['HostName'] ?? '');
-            }
-            if ($name === '') {
-                $name = (string) ($inst['InstanceId'] ?? '');
-            }
-
             $out[] = [
-                'name' => $name,
+                'name' => $privateIp,
                 'appmap' => $appmap,
             ];
         }
