@@ -38,6 +38,15 @@ In the Admin UI:
 - JobHandler: `discoverService`
 
 
+
+### 3. Listen for jobs
+Login the machine (e.g. docker container), and run the job executor:
+
+```shell
+php artisan queue:work
+```
+
+
 # Features
 
 ## Service Discovery
