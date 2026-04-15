@@ -18,18 +18,17 @@ class ContainerLabelServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new ContainerLabelService();
+        $this->service = new ContainerLabelService;
     }
 
-    public function test_getContainersInGroup_returns_empty_array_when_no_environment_detected(): void
+    public function test_get_containers_in_group_returns_empty_array_when_no_environment_detected(): void
     {
         Log::shouldReceive('error')
             ->once()
-            ->with('Neither Docker nor Kubernetes environment detected');
+            ->with('Neither Docker, Kubernetes, nor Aliyun (ALIYUN_VPC_CIDR + credentials) environment detected');
 
-        // Mock environment methods to return false
         $service = $this->getMockBuilder(ContainerLabelService::class)
-            ->onlyMethods(['isDockerEnvironment', 'isKubernetesEnvironment'])
+            ->onlyMethods(['isDockerEnvironment', 'isKubernetesEnvironment', 'isAliyunEnvironment'])
             ->getMock();
 
         $service->expects($this->once())
@@ -40,11 +39,15 @@ class ContainerLabelServiceTest extends TestCase
             ->method('isKubernetesEnvironment')
             ->willReturn(false);
 
+        $service->expects($this->once())
+            ->method('isAliyunEnvironment')
+            ->willReturn(false);
+
         $result = $service->getContainersInGroup();
         $this->assertEquals([], $result);
     }
 
-    public function test_getContainersInGroup_throws_exception_for_kubernetes(): void
+    public function test_get_containers_in_group_throws_exception_for_kubernetes(): void
     {
         $this->expectException(UnsupportedOperationException::class);
 
@@ -67,7 +70,27 @@ class ContainerLabelServiceTest extends TestCase
         $service->getContainersInGroup();
     }
 
-    public function test_getContainersFromDockerHttp_throws_unsupported_operation_exception(): void
+    public function test_get_containers_in_group_returns_aliyun_ecs_list_when_aliyun_environment(): void
+    {
+        $expected = [
+            ['name' => 'web-1', 'appmap' => 'api:8080'],
+        ];
+
+        $service = $this->getMockBuilder(ContainerLabelService::class)
+            ->onlyMethods(['isDockerEnvironment', 'isKubernetesEnvironment', 'isAliyunEnvironment', 'getAliyunEcsMachinesInVpcCidr'])
+            ->getMock();
+
+        $service->expects($this->once())->method('isDockerEnvironment')->willReturn(false);
+        $service->expects($this->once())->method('isKubernetesEnvironment')->willReturn(false);
+        $service->expects($this->once())->method('isAliyunEnvironment')->willReturn(true);
+        $service->expects($this->once())
+            ->method('getAliyunEcsMachinesInVpcCidr')
+            ->willReturn($expected);
+
+        $this->assertEquals($expected, $service->getContainersInGroup());
+    }
+
+    public function test_get_containers_from_docker_http_throws_unsupported_operation_exception(): void
     {
         $this->expectException(UnsupportedOperationException::class);
         $this->expectExceptionMessage('HTTP API method is not yet implemented.');
@@ -81,14 +104,14 @@ class ContainerLabelServiceTest extends TestCase
 
     #[PreserveGlobalState(false)]
     #[RunInSeparateProcess]
-    public function test_getCurrentDockerProject_returns_env_value(): void
+    public function test_get_current_docker_project_returns_env_value(): void
     {
         $projectName = 'test-project';
         putenv("DOCKER_CONTAINER_GROUP_NAME=$projectName");
         $_ENV['DOCKER_CONTAINER_GROUP_NAME'] = $projectName;
         $_SERVER['DOCKER_CONTAINER_GROUP_NAME'] = $projectName;
 
-        $service = new ContainerLabelService();
+        $service = new ContainerLabelService;
         $reflection = new ReflectionClass($service);
         $method = $reflection->getMethod('getCurrentDockerProject');
         $method->setAccessible(true);
@@ -99,7 +122,7 @@ class ContainerLabelServiceTest extends TestCase
 
     #[PreserveGlobalState(false)]
     #[RunInSeparateProcess]
-    public function test_getCurrentDockerProject_throws_exception_when_env_not_set(): void
+    public function test_get_current_docker_project_throws_exception_when_env_not_set(): void
     {
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('Please set DOCKER_CONTAINER_GROUP_NAME environment variable');
@@ -108,7 +131,7 @@ class ContainerLabelServiceTest extends TestCase
         unset($_ENV['DOCKER_CONTAINER_GROUP_NAME']);
         unset($_SERVER['DOCKER_CONTAINER_GROUP_NAME']);
 
-        $service = new ContainerLabelService();
+        $service = new ContainerLabelService;
         $reflection = new ReflectionClass($service);
         $method = $reflection->getMethod('getCurrentDockerProject');
         $method->setAccessible(true);
@@ -116,7 +139,7 @@ class ContainerLabelServiceTest extends TestCase
         $method->invoke($service);
     }
 
-    public function test_isDockerEnvironment_returns_false_when_no_socket_exists(): void
+    public function test_is_docker_environment_returns_false_when_no_socket_exists(): void
     {
         // Temporarily set env to non-existent path
         putenv('DOCKER_HOST=unix:///nonexistent/path/docker.sock');
@@ -145,7 +168,7 @@ class ContainerLabelServiceTest extends TestCase
         putenv('DOCKER_HOST');
     }
 
-    public function test_isKubernetesEnvironment_returns_false_when_files_dont_exist(): void
+    public function test_is_kubernetes_environment_returns_false_when_files_dont_exist(): void
     {
         $reflection = new ReflectionClass($this->service);
         $method = $reflection->getMethod('isKubernetesEnvironment');
@@ -159,7 +182,7 @@ class ContainerLabelServiceTest extends TestCase
         $this->assertFalse($result);
     }
 
-    public function test_getContainersFromDockerSocket_throws_exception_when_socket_not_found(): void
+    public function test_get_containers_from_docker_socket_throws_exception_when_socket_not_found(): void
     {
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('Docker socket not found');
@@ -171,7 +194,7 @@ class ContainerLabelServiceTest extends TestCase
         $method->invoke($this->service, '/nonexistent/docker.sock');
     }
 
-    public function test_getContainersFromDockerSocket_handles_unix_prefix(): void
+    public function test_get_containers_from_docker_socket_handles_unix_prefix(): void
     {
         $this->expectException(Exception::class);
 
@@ -189,4 +212,3 @@ class ContainerLabelServiceTest extends TestCase
         }
     }
 }
-
